@@ -322,6 +322,21 @@ html[data-accent="indigo"]{--accent:#5145C8;--accent-bg:#ECEBFA}
 #boot-screen.error .boot-bar{animation:none;left:0;width:100%;background:var(--red)}
 #boot-screen.error .boot-retry{display:inline-flex}
 @media(prefers-reduced-motion:reduce){.boot-bar{animation:none;left:0;width:100%}}
+
+/* ===== Auth / Login screen ===== */
+#login-screen{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'DM Sans',system-ui,sans-serif;}
+#login-screen.hide{display:none}
+.login-card{width:320px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:36px 32px 28px;display:flex;flex-direction:column;gap:16px;}
+.login-logo{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;letter-spacing:.05em;color:var(--text);text-align:center;margin-bottom:4px;}
+.login-sub{font-size:11px;color:var(--text3);text-align:center;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px;}
+.login-field{display:flex;flex-direction:column;gap:5px;}
+.login-field label{font-size:11px;color:var(--text2);font-weight:500;letter-spacing:.03em;}
+.login-field input{padding:9px 11px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .15s;}
+.login-field input:focus{border-color:var(--accent);}
+.login-btn{padding:10px;border-radius:7px;background:var(--accent);color:#fff;font-size:13px;font-weight:500;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s;margin-top:4px;}
+.login-btn:hover{opacity:.88;}
+.login-btn:disabled{opacity:.5;cursor:not-allowed;}
+.login-error{font-size:11px;color:var(--red);text-align:center;min-height:16px;}
 /* ===== Overview tab ===== */
 .ovhead{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
 .ovhead h1{font-size:21px;font-weight:600;letter-spacing:-.3px}
@@ -486,6 +501,22 @@ html[data-accent="indigo"]{--accent:#5145C8;--accent-bg:#ECEBFA}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
+<div id="login-screen" class="hide">
+  <div class="login-card">
+    <div class="login-logo">MFB</div>
+    <div class="login-sub">Studio · Sign in</div>
+    <div class="login-field">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="you@mfb.com" autocomplete="email" />
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign in</button>
+  </div>
+</div>
 <div id="boot-screen">
   <div class="boot-mark">MFB</div>
   <div class="boot-sub">Studio Overview</div>
@@ -987,6 +1018,11 @@ html[data-accent="indigo"]{--accent:#5145C8;--accent-bg:#ECEBFA}
     
   </main>
 </div>
+<div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+  <div style="font-size:11px;color:var(--text3);margin-bottom:8px;" id="login-user-label"></div>
+  <button class="btn" onclick="doLogout()" style="color:var(--red);border-color:var(--red)">Sign out</button>
+</div>
+
 </div>
 
 
@@ -1100,6 +1136,49 @@ function initSidebar(){
   }
 }
 function activeDesignersForMonth(y,m){const firstOfMonth=new Date(y,m,1);return state.allDesignerObjects.filter(o=>!o.archiveDate||o.archiveDate>firstOfMonth).map(o=>o.name);}
+
+// ─── Authentication ───────────────────────────────────────────────────────────
+function showLoginScreen(){
+  document.getElementById('login-screen').classList.remove('hide');
+  document.getElementById('boot-screen').style.display='none';
+  setTimeout(()=>document.getElementById('login-email').focus(), 100);
+}
+function hideLoginScreen(){
+  document.getElementById('login-screen').classList.add('hide');
+}
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-password').value;
+  const errEl=document.getElementById('login-error');
+  const btn=document.getElementById('login-btn');
+  if(!email||!password){errEl.textContent='Please enter email and password.';return;}
+  errEl.textContent='';
+  btn.disabled=true;btn.textContent='Signing in…';
+  try{
+    const{data,error}=await sb_client.auth.signInWithPassword({email,password});
+    if(error)throw error;
+    // onAuthStateChange will handle hideLoginScreen + loadAll
+  }catch(e){
+    errEl.textContent=e.message||'Sign in failed.';
+    btn.disabled=false;btn.textContent='Sign in';
+  }
+}
+async function doLogout(){
+  if(!confirm('Sign out?'))return;
+  await sb_client.auth.signOut();
+  bootDone=false;
+  // Reset app state
+  state.designers=[];state.projects=[];state.entries={};state.consultants=[];state.preconstruction=[];
+  document.getElementById('boot-screen').style.display='flex';
+  document.getElementById('boot-screen').classList.remove('hide','error');
+  document.getElementById('boot-status').textContent='Connecting…';
+  showLoginScreen();
+}
+function setUserLabel(email){
+  const el=document.getElementById('login-user-label');
+  if(el)el.textContent='Signed in as '+email;
+}
+
 function loadSettings(){try{const s=localStorage.getItem('mfb_settings');if(s){const p=JSON.parse(s);state.rate=p.rate||50;state.hpq=p.hpq||2;state.activeDesigner=p.activeDesigner||null;if(p.tgtTargets&&typeof Object.values(p.tgtTargets)[0]==='number')tgtTargets=p.tgtTargets;}}catch(e){}}
 function saveSettings(){try{localStorage.setItem('mfb_settings',JSON.stringify({rate:state.rate,hpq:state.hpq,activeDesigner:state.activeDesigner,tgtTargets}));}catch(e){}}
 const CACHE_KEY='mfb_v4_cache1';const CACHE_TTL=15*60*1000;
@@ -2723,7 +2802,35 @@ function genTableSkeleton(){
 function showSkeletons(){const ov=document.getElementById('tab-overview');if(ov&&ov.classList.contains('active'))ovRenderSkeleton(true);genTableSkeleton();}
 function reRenderActive(){const a=document.querySelector('.nav-item.active');if(a&&a.dataset.tab)switchTab(a.dataset.tab);}
 
-loadSettings();initControls();loadAll();initSidebar();
+loadSettings();initControls();initSidebar();
+// Check for existing session — do not load any data without one
+(async()=>{
+  const{data:{session}}=await sb_client.auth.getSession();
+  if(session){
+    setUserLabel(session.user.email);
+    loadAll();
+  } else {
+    // No session — show login, never call loadAll
+    document.getElementById('boot-screen').style.display='none';
+    showLoginScreen();
+  }
+})();
+
+// Listen for auth state changes (handles login/logout)
+sb_client.auth.onAuthStateChange((event, session)=>{
+  if(event==='SIGNED_IN' && session){
+    setUserLabel(session.user.email);
+    hideLoginScreen();
+    loadAll();
+  }
+  if(event==='SIGNED_OUT'){
+    bootDone=false;
+    state.designers=[];state.projects=[];state.entries={};
+    state.consultants=[];state.preconstruction=[];
+    document.getElementById('boot-screen').style.display='none';
+    showLoginScreen();
+  }
+});
 setTimeout(()=>{if(!bootDone){const b=document.getElementById('boot-screen');if(b&&getComputedStyle(b).display!=='none')bootUpdate('err','Still connecting — check your network and retry');}},30000);
 
 

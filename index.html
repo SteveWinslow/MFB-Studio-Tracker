@@ -567,7 +567,7 @@ html[data-accent="indigo"]{--accent:#5145C8;--accent-bg:#ECEBFA}
     <div class="nav-section">Config</div>
     <button class="nav-item" data-label="Settings" data-tab="settings" onclick="switchTab('settings')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2"></circle><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M3.1 12.9l1.4-1.4M11.5 4.5l1.4-1.4"></path></svg><span class="nav-label">Settings</span></button>
   </nav>
-  <div class="sidebar-footer"><div class="sync-status"><div class="sync-dot" id="sync-dot"></div><span id="sync-text">Connecting…</span></div></div>
+  <div class="sidebar-footer"><div class="sync-status"><div class="sync-dot" id="sync-dot"></div><span id="sync-text">Connecting…</span></div><button onclick="doLogout()" title="Sign out" id="login-user-label" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text3);padding:0;margin-left:auto;white-space:nowrap;opacity:.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">Sign out</button></div>
 </aside>
 <div class="main">
   <header class="topbar">
@@ -1018,10 +1018,7 @@ html[data-accent="indigo"]{--accent:#5145C8;--accent-bg:#ECEBFA}
     
   </main>
 </div>
-<div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
-  <div style="font-size:11px;color:var(--text3);margin-bottom:8px;" id="login-user-label"></div>
-  <button class="btn" onclick="doLogout()" style="color:var(--red);border-color:var(--red)">Sign out</button>
-</div>
+
 
 </div>
 
@@ -1176,7 +1173,7 @@ async function doLogout(){
 }
 function setUserLabel(email){
   const el=document.getElementById('login-user-label');
-  if(el)el.textContent='Signed in as '+email;
+  if(el)el.title='Signed in as '+email;
 }
 
 function loadSettings(){try{const s=localStorage.getItem('mfb_settings');if(s){const p=JSON.parse(s);state.rate=p.rate||50;state.hpq=p.hpq||2;state.activeDesigner=p.activeDesigner||null;if(p.tgtTargets&&typeof Object.values(p.tgtTargets)[0]==='number')tgtTargets=p.tgtTargets;}}catch(e){}}

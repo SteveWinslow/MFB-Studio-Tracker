@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MFB Studio V7 Supabase-Vercel</title>
+<title>MFB Studio V8</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <style>/* latin-ext */
 @font-face {
@@ -1503,12 +1503,12 @@ function renderMetrics(){
 function renderTable(){
   const tbody=document.getElementById('ts-body');tbody.innerHTML='';const d=state.activeDesigner;const y=state.year,m=state.month;
   if(!d){tbody.innerHTML=`<tr><td colspan="5" class="empty-state">Add a designer in Settings to get started.</td></tr>`;return;}
-  const days=getWorkingDays(y,m);const pNames=state.projects.filter(p=>!p.status||p.status==='active').slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(p=>p.name);const today=new Date();
+  const days=getWorkingDays(y,m);const pNames=state.projects.filter(p=>!p.status||p.status==='active').slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(p=>p.name);const allPNames=state.projects.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(p=>p.name);const today=new Date();
   days.forEach(({d:day,dow})=>{
     const isToday=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===day;const label=String(day).padStart(2,'0')+' '+DAYS[dow];const tr=document.createElement('tr');
     if(isToday)tr.style.cssText='outline:2px solid var(--accent);outline-offset:-2px';
     let html=`<td class="cell-date" style="${isToday?'color:var(--accent);font-weight:600':''}">${label}</td>`;
-    QUARTERS.forEach(q=>{const val=getEntry(d,y,m,day,q);html+=`<td class="cell-q"><select class="q-sel${val?' filled':''}" data-day="${day}" data-q="${q}"><option value="">–</option>${pNames.map(p=>`<option value="${esc(p)}"${p===val?' selected':''}>${esc(p)}</option>`).join('')}</select></td>`;});
+    QUARTERS.forEach(q=>{const val=getEntry(d,y,m,day,q);html+=`<td class="cell-q"><select class="q-sel${val?' filled':''}" data-day="${day}" data-q="${q}"><option value="">–</option>${pNames.map(p=>`<option value="${esc(p)}"${p===val?' selected':''}>${esc(p)}</option>`).join('')+(val&&!pNames.includes(val)?`<option value="${esc(val)}" selected>${esc(val)}</option>`:'')}</select></td>`;});
     tr.innerHTML=html;tbody.appendChild(tr);
   });
   tbody.querySelectorAll('.q-sel').forEach(sel=>{sel.addEventListener('change',async()=>{sel.classList.toggle('filled',!!sel.value);renderMetrics();await setEntry(state.activeDesigner,state.year,state.month,+sel.dataset.day,sel.dataset.q,sel.value);});});

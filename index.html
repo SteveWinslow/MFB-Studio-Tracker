@@ -800,7 +800,7 @@ html[data-accent="indigo"]{--accent:#5145C8;--accent-bg:#ECEBFA}
         <button class="btn btn-primary" onclick="showAddProjectModal()"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 1v11M1 6.5h11"></path></svg>Add project</button>
       </div>
       <div class="toolbar"><span class="toolbar-label">Sort</span>
-        <select class="sel-compact" id="proj-sort" onchange="renderProjectList()"><option value="code">Code A–Z</option><option value="name">Name A–Z</option><option value="cv">CV ↓</option><option value="gifa">GIFA ↓</option></select>
+        <select class="sel-compact" id="proj-sort" onchange="renderProjectList()"><option value="code">Code A–Z</option><option value="name">Name A–Z</option><option value="cv">CV ↓</option><option value="gifa">GIFA ↓</option><option value="lastentry">Last Entry ↑</option></select>
         <span class="toolbar-label" style="margin-left:8px">Show</span>
         <div class="toggle-group">
           <button class="toggle-btn active" id="proj-filter-active" onclick="setProjFilter('active')">Active</button>
@@ -808,7 +808,7 @@ html[data-accent="indigo"]{--accent:#5145C8;--accent-bg:#ECEBFA}
         </div>
       </div>
       <div class="card"><div class="card-scroll"><table><thead><tr>
-        <th>Code</th><th>Project name</th><th>Client</th><th class="num">CV</th><th class="num">GIFA (m²)</th><th class="num">£/m²</th><th>Address</th><th>Notes</th><th>Status</th><th></th>
+        <th>Code</th><th>Project name</th><th>Client</th><th class="num">CV</th><th class="num">GIFA (m²)</th><th class="num">£/m²</th><th>Address</th><th>Notes</th><th>Last Entry</th><th>Status</th><th></th>
       </tr></thead><tbody id="project-list-body"></tbody></table></div></div>
     </div>
 
@@ -1896,8 +1896,36 @@ function statusBadge(p){
   if(s==='sale_lost'&&p.statusDate)detail=` ${p.statusDate.slice(0,7)}`;
   return`<span class="badge ${cls}">${label}${detail}</span>`;
 }
+
+// ─── Last allocation date per project ─────────────────────────────────────────
+function lastAllocationDate(projectName){
+  let latest = null;
+  Object.entries(state.entries).forEach(([key, proj]) => {
+    if(proj !== projectName) return;
+    const parts = key.split('|');
+    if(parts.length < 4) return;
+    const y = parseInt(parts[1]), m = parseInt(parts[2]), d = parseInt(parts[3]);
+    if(!y || isNaN(m) || !d) return;
+    const dt = new Date(y, m, d); // m is 0-indexed from app
+    if(!latest || dt > latest) latest = dt;
+  });
+  return latest;
+}
+function fmtLastAlloc(dt){
+  if(!dt) return null;
+  const now = new Date();
+  const diffMs = now - dt;
+  const diffDays = Math.floor(diffMs / 86400000);
+  const diffMonths = (now.getFullYear() - dt.getFullYear()) * 12 + (now.getMonth() - dt.getMonth());
+  if(diffDays < 32) return { label: diffDays + 'd ago', age: 'recent' };
+  if(diffMonths < 6) return { label: diffMonths + 'mo ago', age: 'recent' };
+  if(diffMonths < 12) return { label: diffMonths + 'mo ago', age: 'old' };
+  const yrs = Math.floor(diffMonths / 12);
+  return { label: yrs + 'yr ' + (diffMonths % 12) + 'mo ago', age: 'stale' };
+}
+
 function renderProjectList(){
-  const tbody=document.getElementById('project-list-body');tbody.innerHTML='';if(!state.projects.length){tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state">No projects yet — click "Add project" to get started.</div></td></tr>`;return;}
+  const tbody=document.getElementById('project-list-body');tbody.innerHTML='';if(!state.projects.length){tbody.innerHTML=`<tr><td colspan="11"><div class="empty-state">No projects yet — click "Add project" to get started.</div></td></tr>`;return;}
   const sortBy=(document.getElementById('proj-sort')||{value:'code'}).value;
   let filtered=state.projects.map((p,i)=>({p,i}));
   if(projFilter==='active')filtered=filtered.filter(({p})=>!p.status||p.status==='active');
@@ -1906,6 +1934,7 @@ function renderProjectList(){
     if(sortBy==='name')return(a.p.name||'').localeCompare(b.p.name||'');
     if(sortBy==='cv'){const ca=parseFloat(a.p.cv)||0,cb=parseFloat(b.p.cv)||0;if(!ca&&!cb)return 0;if(!ca)return 1;if(!cb)return -1;return cb-ca;}
     if(sortBy==='gifa'){const ga=parseFloat(a.p.gifa)||0,gb=parseFloat(b.p.gifa)||0;return gb-ga;}
+    if(sortBy==='lastentry'){const la=lastAllocationDate(a.p.name),lb=lastAllocationDate(b.p.name);if(!la&&!lb)return 0;if(!la)return 1;if(!lb)return -1;return la-lb;}
     return 0;
   });
   sorted.forEach(({p,i})=>{
@@ -1913,6 +1942,10 @@ function renderProjectList(){
     const cpm=cv>0&&gifa>0?Math.round(cv/gifa):null;
     const tr=document.createElement('tr');
     if(p.status&&p.status!=='active')tr.style.opacity='0.7';
+    const _la=lastAllocationDate(p.name);const _laf=fmtLastAlloc(_la);
+    const _laColor=!_laf?'var(--text3)':_laf.age==='stale'?'var(--red)':_laf.age==='old'?'var(--amber)':'var(--green)';
+    const _laBg=!_laf?'':_laf.age==='stale'?'rgba(239,68,68,.07)':_laf.age==='old'?'rgba(217,119,6,.07)':'';
+    if(_laf&&_laf.age==='stale')tr.style.background=_laBg;
     tr.innerHTML=`<td><span class="code-chip">${esc(p.code)}</span></td>
       <td style="font-weight:500">${esc(p.name)}</td>
       <td style="font-size:12px;color:var(--text2)">${esc(p.client)||'–'}</td>
@@ -1921,6 +1954,7 @@ function renderProjectList(){
       <td class="num" style="font-weight:600;color:var(--text2)">${cpm!==null?'£'+cpm.toLocaleString():'–'}</td>
       <td style="font-size:12px;color:var(--text3);max-width:180px">${esc(p.address)||'–'}</td>
       <td style="font-size:12px;color:var(--text3)">${esc(p.notes)||'–'}</td>
+      <td style="font-size:12px;color:${_laColor};white-space:nowrap">${_laf?_laf.label:'<span style="color:var(--text3)">–</span>'}</td>
       <td>${statusBadge(p)}${p.statusNote?`<div style="font-size:11px;color:var(--text3);margin-top:3px">${esc(p.statusNote)}</div>`:''}</td>
       <td style="white-space:nowrap"><button class="btn btn-sm" onclick="showAddProjectModal(${i})" style="margin-right:4px">Edit</button><button class="btn btn-sm" onclick="openStatusModal(${i})" style="margin-right:4px">Status</button><button class="btn btn-sm btn-danger" onclick="removeProject(${i})">Remove</button></td>`;
     tbody.appendChild(tr);
@@ -2584,16 +2618,23 @@ function renderMFBFees(){
 async function removeProject(i){if(!confirm('Remove this project?'))return;const name=state.projects[i].name;state.projects.splice(i,1);clearCache();setSyncStatus('loading','Removing…');try{await apiCall({action:'deleteProject',key:name});setSyncStatus('ok','Removed');}catch(e){setSyncStatus('err','Error: '+e.message);}renderProjectList();renderTable();}
 
 async function renderLocations(){
-  const withAddr=state.projects.filter(p=>p.address&&p.address.trim());const empty=document.getElementById('locations-empty'),mapWrap=document.getElementById('locations-map-wrap');empty.style.display='none';mapWrap.style.display='block';
-  const OFFICE_COORD={lat:51.5267,lng:-2.5491,name:'MFB Office',address:'1290 Park Ave, Aztec W, Bristol BS32 4SG'};
+  const withAddr=state.projects.filter(p=>p.address&&p.address.trim()&&p.code&&(/^C\d/.test(p.code)||/^P\d/.test(p.code))&&(!p.status||p.status==='active'));const empty=document.getElementById('locations-empty'),mapWrap=document.getElementById('locations-map-wrap');empty.style.display='none';mapWrap.style.display='block';
+  const OFFICE_COORD={lat:51.54157515948247,lng:-2.577553808071605,name:'MFB Office',address:'MFB Office, Bristol'};
   const knownCoords={'1290 Park Ave, Aztec W, Bristol BS32 4SG':{lat:51.5267,lng:-2.5491},'1 Colonial Way, Watford WD24 4YR':{lat:51.6670217,lng:-0.3925158},'1 Colonial Way, Watford, WD24 4YR':{lat:51.6670217,lng:-0.3925158},'Mt Pleasant Industrial Estate, Mount Pleasant Rd, Southampton SO14 0SP':{lat:50.9144838,lng:-1.3902755},'Mt Pleasant Industrial Estate, Mount Pleasant Rd, Southampton, SO14 0SP':{lat:50.9144838,lng:-1.3902755},'Mt Pleasent Industrial Estate, Mount Pleasant Rd, Southampton SO14 0SP':{lat:50.9144838,lng:-1.3902755},'Mt Pleasent Industrial Estate, Mount Pleasant Rd, Southampton, SO14 0SP':{lat:50.9144838,lng:-1.3902755},'Gemini One, 5520 John Smith Dr, Oxford OX4 2LL':{lat:51.7290271,lng:-1.2069212},'Harbour, Salt Quay House, 4 North East Quay, Sutton, Plymouth PL4 0BN':{lat:50.370218,lng:-4.131362},'1 Portal Way, London W3 6RS':{lat:51.5094,lng:-0.2754},'Unit G3C, Bolingbroke Wy., Bristol BS34 6FE':{lat:51.5177,lng:-2.5693},'Unit G3C, Bolingbroke Way, Bristol BS34 6FE':{lat:51.5177,lng:-2.5693}};
   function normAddr(a){return a.trim().replace(/\s+/g,' ');}const coordsByNorm={};Object.keys(knownCoords).forEach(k=>{coordsByNorm[normAddr(k)]=knownCoords[k];});function extractPostcode(a){const m=a.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}/i);return m?m[0].trim():null;}
+  function parseLatLng(a){const m=a.trim().match(/^(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)$/);return m?{lat:parseFloat(m[1]),lng:parseFloat(m[2])}:null;}
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));mapWrap.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px"><span class="spinner" style="margin-right:8px"></span>Locating projects…</div>';const coords=[];const failed=[];
-  for(let i=0;i<withAddr.length;i++){const p=withAddr[i];const cached=coordsByNorm[normAddr(p.address)];if(cached){coords.push({p,lat:cached.lat,lng:cached.lng});continue;}if(i>0)await sleep(1100);try{const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(p.address)}&limit=1&countrycodes=gb`,{headers:{'Accept-Language':'en'}});const j=await r.json();if(j&&j[0]){coords.push({p,lat:parseFloat(j[0].lat),lng:parseFloat(j[0].lon)});}else{const pc=extractPostcode(p.address);if(pc){await sleep(1100);const r2=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pc)}&limit=1&countrycodes=gb`,{headers:{'Accept-Language':'en'}});const j2=await r2.json();if(j2&&j2[0]){coords.push({p,lat:parseFloat(j2[0].lat),lng:parseFloat(j2[0].lon)});}else{failed.push(p);}}else{failed.push(p);}}}catch(e){failed.push(p);}}
+  for(let i=0;i<withAddr.length;i++){const p=withAddr[i];const direct=parseLatLng(p.address);if(direct){coords.push({p,lat:direct.lat,lng:direct.lng});continue;}const cached=coordsByNorm[normAddr(p.address)];if(cached){coords.push({p,lat:cached.lat,lng:cached.lng});continue;}if(i>0)await sleep(1100);try{const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(p.address)}&limit=1&countrycodes=gb`,{headers:{'Accept-Language':'en'}});const j=await r.json();if(j&&j[0]){coords.push({p,lat:parseFloat(j[0].lat),lng:parseFloat(j[0].lon)});}else{const pc=extractPostcode(p.address);if(pc){await sleep(1100);const r2=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pc)}&limit=1&countrycodes=gb`,{headers:{'Accept-Language':'en'}});const j2=await r2.json();if(j2&&j2[0]){coords.push({p,lat:parseFloat(j2[0].lat),lng:parseFloat(j2[0].lon)});}else{failed.push(p);}}else{failed.push(p);}}}catch(e){failed.push(p);}}
   const allLats=[OFFICE_COORD.lat,...coords.map(c=>c.lat)],allLngs=[OFFICE_COORD.lng,...coords.map(c=>c.lng)];const minLat=Math.min(...allLats),maxLat=Math.max(...allLats),minLng=Math.min(...allLngs),maxLng=Math.max(...allLngs);const padLat=(maxLat-minLat)*0.2||0.05,padLng=(maxLng-minLng)*0.2||0.05;
-  const markerJS=coords.map(c=>`L.marker([${c.lat},${c.lng}]).addTo(map).bindPopup('<b style="font-family:DM Sans,sans-serif">${c.p.name}</b><br><code style="font-size:11px">${c.p.code}</code><br><small style="color:#888">${c.p.address}</small>');`).join('\n');
+  const markerJS=coords.map(c=>{
+    const isC=c.p.code&&/^C\d/.test(c.p.code);
+    const col=isC?'#16a34a':'#d97706'; // green for C, amber for P
+    const icon=`L.divIcon({className:'',html:'<div style=\"width:18px;height:18px;background:${col};border:2px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 1px 4px rgba(0,0,0,.35)\"></div>',iconSize:[18,18],iconAnchor:[9,18],popupAnchor:[0,-20]})`;
+    return `L.marker([${c.lat},${c.lng}],{icon:${icon}}).addTo(map).bindPopup('<b style="font-family:DM Sans,sans-serif">${c.p.name}</b><br><code style="font-size:11px;color:${col}">${c.p.code}</code><br><small style="color:#888">${c.p.address}</small>');`;
+  }).join('\n');
   const officeJS=`const oi=L.divIcon({className:'',html:'<div style="width:24px;height:24px;background:#2563EB;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>',iconSize:[24,24],iconAnchor:[12,24],popupAnchor:[0,-26]});L.marker([${OFFICE_COORD.lat},${OFFICE_COORD.lng}],{icon:oi}).addTo(map).bindPopup('<b style="color:#2563EB">MFB Office</b><br><small>${OFFICE_COORD.address}</small>').openPopup();`;
-  const srcdoc=`<!DOCTYPE html><html><head><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>'+'<'+'script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">'+'<\/script><style>html,body,#map{margin:0;padding:0;width:100%;height:100%}</style></head><body><div id="map"></div>'+'<'+'script>const map=L.map('map');L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'\xa9 OpenStreetMap contributors'}).addTo(map);${officeJS}${markerJS}map.fitBounds([[${minLat-padLat},${minLng-padLng}],[${maxLat+padLat},${maxLng+padLng}]]);<\/script></body></html>`;
+  const scr='script';
+  const srcdoc=`<!DOCTYPE html><html><head><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><${scr} src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></${scr}><style>html,body,#map{margin:0;padding:0;width:100%;height:100%}</style></head><body><div id="map"></div><${scr}>const map=L.map('map');L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors'}).addTo(map);${officeJS}${markerJS}map.fitBounds([[${minLat-padLat},${minLng-padLng}],[${maxLat+padLat},${maxLng+padLng}]]);</${scr}></body></html>`;
   mapWrap.innerHTML='';const iframe=document.createElement('iframe');iframe.style.cssText='width:100%;height:500px;border:none';iframe.srcdoc=srcdoc;mapWrap.appendChild(iframe);
   if(failed.length){const warn=document.createElement('div');warn.style.cssText='margin-top:10px;padding:10px 14px;background:var(--amber-bg);border:1px solid rgba(217,119,6,.3);border-radius:8px;font-size:12px;color:var(--amber)';warn.innerHTML=`<strong>Could not locate ${failed.length} address${failed.length>1?'es':''}:</strong> ${failed.map(p=>`${p.name} — <em>${p.address}</em>`).join(', ')}`;mapWrap.appendChild(warn);}
 }

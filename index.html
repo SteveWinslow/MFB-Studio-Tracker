@@ -1154,7 +1154,7 @@ function activeDesignersForMonth(y,m){const firstOfMonth=new Date(y,m,1);return 
 
 
 // ─── Role-based access control ────────────────────────────────────────────────
-const DESIGNER_TABS = ['sheet','summary','burn']; // tabs designers can see
+const DESIGNER_TABS = ['sheet','summary','burn','preconstruction']; // tabs designers can see
 
 function applyRole(role){
   userRole = role;
@@ -1548,7 +1548,7 @@ function renderBurn(){
     const status=ragStatus(pctUsed);if(status==='red')red++;else if(status==='amber')amber++;else if(status==='green')green++;
     const eff=(hrs>0&&totalFee>0)?totalFee/hrs:null;const effCol=eff===null?'var(--text3)':eff>=state.rate*2?'var(--green)':eff>=state.rate?'var(--amber)':'var(--red)';
     totQtrs+=qtrs;totHrs+=hrs;totCost+=adjCost;totFee+=totalFee;totRem+=rem;    const conCells=burnMode==='con'?`<td class="num" style="font-size:12px;color:var(--text3)">${conQuoted>0?fmtGBP(conQuoted):'–'}</td><td class="num" style="font-size:12px">${conActual!==null?fmtGBP(conActual):'<span style="color:var(--text3)">not set</span>'}</td><td class="num" style="font-size:12px;font-weight:600;color:${conVar!==null&&conVar>0?'var(--red)':conVar!==null&&conVar<0?'var(--green)':'var(--text3)'}">${conVar!==null?(conVar>0?'+':'')+fmtGBP(conVar):'–'}</td>`:'';
-    const tr=document.createElement('tr');tr.innerHTML=`<td><span class="code-chip">${esc(proj.code)}</span></td><td style="font-weight:500">${esc(proj.name)}</td><td class="num">${totalFee>0?fmtGBP(totalFee):'–'}</td><td class="num">${qtrs||'–'}</td><td class="num">${qtrs?hrs.toFixed(1):'–'}</td><td class="num" style="font-weight:600;color:${effCol}">${eff!==null?'£'+Math.round(eff):'–'}</td><td class="num">${fmtGBP(cost)}</td>${conCells}<td class="num" style="color:${rem<0?'var(--red)':'inherit'};font-weight:600">${totalFee>0?fmtGBP(rem):'–'}</td><td style="min-width:150px">${pctUsed!==null?progressBar(pctUsed):'–'}</td><td>${ragBadge(status)}</td><td style="font-size:12px;color:var(--text3)">${esc(proj.notes)}</td>${showDesigners?dQtrs.map(q=>`<td class="num" style="font-size:12px;color:var(--text2)">${q||'–'}</td>`).join(''):''}`;tbody.appendChild(tr);});
+    const tr=document.createElement('tr');tr.innerHTML=`<td><span class="code-chip">${esc(proj.code)}</span></td><td style="font-weight:500">${esc(proj.name)}</td><td class="num">${totalFee>0?fmtGBP(totalFee):'–'}</td><td class="num">${qtrs||'–'}</td><td class="num">${qtrs?hrs.toFixed(1):'–'}</td><td class="num" style="font-weight:600;color:${effCol}">${eff!==null?'£'+Math.round(eff):'–'}</td><td class="num">${fmtGBP(cost)}</td>${conCells}<td class="num" style="color:${rem<0?'var(--red)':'inherit'};font-weight:600">${totalFee>0?fmtGBP(rem):'–'}</td><td style="min-width:150px">${pctUsed!==null?progressBar(pctUsed):'–'}</td><td>${statusBadge(proj)}</td><td style="font-size:12px;color:var(--text3)">${esc(proj.notes)}</td>${showDesigners?dQtrs.map(q=>`<td class="num" style="font-size:12px;color:var(--text2)">${q||'–'}</td>`).join(''):''}`;tbody.appendChild(tr);});
   if(cProjects.length){const pctTot=totFee>0?(totCost/totFee)*100:null;const effTot=(totHrs>0&&totFee>0)?totFee/totHrs:null;const dTotals=_burnDesigners.map(d=>cProjects.reduce((acc,p)=>acc+calcDesignerProjectQuarters(d,p.name),0));const conTotCells=burnMode==='con'?'<td></td><td></td><td></td>':'';const tr=document.createElement('tr');tr.className='total-row';tr.innerHTML=`<td colspan="2">Totals</td><td class="num">${fmtGBP(totFee)}</td><td class="num">${totQtrs}</td><td class="num">${totHrs.toFixed(1)}</td><td class="num" style="font-weight:600">${effTot!==null?'£'+Math.round(effTot):'–'}</td><td class="num">${fmtGBP(totCost)}</td>${conTotCells}<td class="num" style="color:${totRem<0?'var(--red)':'inherit'}">${fmtGBP(totRem)}</td><td>${pctTot!==null?progressBar(pctTot):'–'}</td><td colspan="2"></td>${showDesigners?dTotals.map(t=>`<td class="num">${t||'–'}</td>`).join(''):''}`;tbody.appendChild(tr);}
   if(!cProjects.length)tbody.innerHTML=`<tr><td colspan="11"><div class="empty-state">No C-projects yet.</div></td></tr>`;
   document.getElementById('burn-metrics').innerHTML=`<div class="metric"><div class="metric-label">C-Projects</div><div class="metric-value">${cProjects.length}</div></div><div class="metric red"><div class="metric-label">Red</div><div class="metric-value">${red}</div></div><div class="metric amber"><div class="metric-label">Amber</div><div class="metric-value">${amber}</div></div><div class="metric green"><div class="metric-label">Green</div><div class="metric-value">${green}</div></div><div class="metric"><div class="metric-label">Total fee</div><div class="metric-sub">${fmtGBP(totFee)}</div></div><div class="metric"><div class="metric-label">Internal cost</div><div class="metric-sub">${fmtGBP(totCost)}</div></div><div class="metric ${totRem<0?'red':''}"><div class="metric-label">Fee remaining</div><div class="metric-sub">${fmtGBP(totRem)}</div></div><div class="metric blue"><div class="metric-label">Total hours</div><div class="metric-value">${totHrs.toFixed(0)}</div></div>`;
@@ -2710,11 +2710,38 @@ function ovRenderAtt(){
 }
 function ovRenderUtil(){
   const ref={y:state.year,m:state.month};const cap=getWorkingDays(ref.y,ref.m).length*4;
-  const rows=state.designers.map(d=>({d,u:cap?ovDMonthQ(d,ref.y,ref.m)/cap*100:0})).sort((a,b)=>b.u-a.u);
-  const avg=rows.length?Math.round(rows.reduce((s,r)=>s+r.u,0)/rows.length):0;
-  const col=u=>u>100?'var(--red)':u>=85?'var(--green)':u>=70?'var(--accent)':'var(--amber)';
-  const body=rows.map(({d,u})=>`<div class="util-row"><div class="util-name">${esc(d)}</div><div class="util-track"><div class="util-fill" style="width:${Math.min(u,100)}%;background:${col(u)}"></div></div><div class="util-pct"${u>100?' style="color:var(--red)"':''}>${Math.round(u)}%</div></div>`).join('')||'<div style="padding:20px 0;text-align:center;color:var(--text3);font-size:13px">No designers configured.</div>';
-  document.getElementById('ov-util').innerHTML=`<div class="card-head"><h2>Team utilisation</h2><span class="h-meta">${MONTHS[ref.m].slice(0,3)} · avg ${avg}%</span></div><div class="ovbody">${body}<div class="util-foot"><span>100% = full working month</span><button class="card-link" onclick="switchTab('resource')">Resource Load →</button></div></div>`;
+  // Split quarters into C&P (chargeable) vs other (admin/internal)
+  function splitQ(d,y,m){
+    let cp=0,other=0;
+    for(const k in state.entries){
+      const v=state.entries[k];if(!v)continue;
+      const a=k.split('|');
+      if(a[0]!==d||+a[1]!==y||+a[2]!==m)continue;
+      // Find project code
+      const proj=state.projects.find(p=>p.name===v);
+      const code=proj?proj.code:v;
+      if(code&&/^[CP]\d/.test(code))cp++;else other++;
+    }
+    return{cp,other,total:cp+other};
+  }
+  const rows=state.designers.map(d=>{const s=splitQ(d,ref.y,ref.m);return{d,cp:cap?s.cp/cap*100:0,other:cap?s.other/cap*100:0,total:cap?s.total/cap*100:0};}).sort((a,b)=>b.total-a.total);
+  const avg=rows.length?Math.round(rows.reduce((s,r)=>s+r.total,0)/rows.length):0;
+  const body=rows.map(({d,cp,other,total})=>{
+    const cpW=Math.min(cp,100);
+    const otherW=Math.min(other,Math.max(0,100-cpW));
+    const totalOver=total>100;
+    return`<div class="util-row">
+      <div class="util-name">${esc(d)}</div>
+      <div class="util-track" style="position:relative;overflow:hidden">
+        <div style="position:absolute;left:0;top:0;height:100%;width:${cpW}%;background:var(--accent);border-radius:3px 0 0 3px;transition:width .3s"></div>
+        <div style="position:absolute;left:${cpW}%;top:0;height:100%;width:${otherW}%;background:var(--border);transition:width .3s"></div>
+      </div>
+      <div class="util-pct"${totalOver?' style="color:var(--red)"':''}>
+        <span style="color:var(--accent)">${Math.round(cp)}%</span><span style="color:var(--text3);font-size:10px;margin-left:2px">+${Math.round(other)}%</span>
+      </div>
+    </div>`;
+  }).join('')||'<div style="padding:20px 0;text-align:center;color:var(--text3);font-size:13px">No designers configured.</div>';
+  document.getElementById('ov-util').innerHTML=`<div class="card-head"><h2>Team utilisation</h2><span class="h-meta">${MONTHS[ref.m].slice(0,3)} · avg ${avg}%</span></div><div class="ovbody">${body}<div class="util-foot"><span style="display:flex;align-items:center;gap:10px"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--accent);border-radius:2px;display:inline-block"></span>C&P time</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--border);border-radius:2px;display:inline-block"></span>Other</span><span>· 100% = full working month</span></span><button class="card-link" onclick="switchTab('resource')">Resource Load →</button></div></div>`;
 }
 function ovRenderPipe(){
   const rows=state.projects.filter(p=>ovIsP(p)).map(p=>({p,fee:ovFee(p)})).sort((a,b)=>b.fee-a.fee).slice(0,6);
@@ -2734,7 +2761,23 @@ function renderOverview(){
   if(!document.getElementById('ov-kpis'))return;
   const sub=document.getElementById('ov-sub');
   if(sub)sub.textContent=`${MONTHS[state.month]} ${state.year} · ${state.designers.length} designer${state.designers.length!==1?'s':''} · live from your sheet`;
-  ovRenderBudgetAlert();ovRenderKpis();ovRenderFb();ovRenderAtt();ovRenderUtil();ovRenderPipe();ovRenderTrend();
+
+  // Render light cards immediately
+  ovRenderBudgetAlert();
+  ovRenderKpis();
+
+  // Show skeletons in deferred cards so nothing looks blank
+  ['ov-att','ov-util','ov-pipe','ov-fb','ov-trend'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&!el.innerHTML.trim())el.innerHTML='<div class="card-head"><span class="sk" style="width:140px;height:13px"></span></div><div class="ovbody">'+Array(4).fill('<div class="sk-row"><span class="sk" style="width:42%;height:12px"></span><span class="sk" style="width:16%;height:12px;margin-left:auto"></span></div>').join('')+'</div>';
+  });
+
+  // Defer heavier cards progressively so tab feels instant
+  setTimeout(()=>ovRenderAtt(),    30);
+  setTimeout(()=>ovRenderUtil(),   80);
+  setTimeout(()=>ovRenderPipe(),  130);
+  setTimeout(()=>ovRenderFb(),    180);
+  setTimeout(()=>ovRenderTrend(), 250);
 }
 
 /* ===== Over-budget banner (Overview) ===== */

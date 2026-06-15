@@ -1131,6 +1131,8 @@ const TAB_TITLES={overview:'Studio Overview',sheet:'Design Allocation',summary:'
 
 let state={year:new Date().getFullYear(),month:new Date().getMonth(),activeDesigner:null,allDesignerObjects:[],allDesigners:[],designers:[],projects:[],entries:{},consultants:[],rate:40,hpq:2};
 let summaryType='C';
+let userRole='designer'; // 'admin' or 'designer' — set on login
+
 
 function toggleSidebar(){
   const sb=document.querySelector('.sidebar');
@@ -1149,6 +1151,49 @@ function initSidebar(){
   }
 }
 function activeDesignersForMonth(y,m){const firstOfMonth=new Date(y,m,1);return state.allDesignerObjects.filter(o=>!o.archiveDate||o.archiveDate>firstOfMonth).map(o=>o.name);}
+
+
+// ─── Role-based access control ────────────────────────────────────────────────
+const DESIGNER_TABS = ['sheet','summary','burn']; // tabs designers can see
+
+function applyRole(role){
+  userRole = role;
+  if(role === 'admin') return; // admin sees everything
+
+  // Hide all nav items not in DESIGNER_TABS
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    const tab = btn.dataset.tab;
+    if(tab && !DESIGNER_TABS.includes(tab)){
+      btn.style.display = 'none';
+    }
+  });
+
+  // Hide nav section headers that become empty
+  document.querySelectorAll('.nav-section').forEach(section => {
+    // Check if any visible nav-item follows before the next nav-section
+    let el = section.nextElementSibling;
+    let hasVisible = false;
+    while(el && !el.classList.contains('nav-section')){
+      if(el.classList.contains('nav-item') && el.style.display !== 'none'){
+        hasVisible = true;
+        break;
+      }
+      el = el.nextElementSibling;
+    }
+    if(!hasVisible) section.style.display = 'none';
+  });
+
+  // If current tab is not allowed, switch to sheet
+  const currentTab = document.querySelector('.nav-item.active');
+  if(currentTab && !DESIGNER_TABS.includes(currentTab.dataset.tab)){
+    switchTab('sheet');
+  }
+
+  // Hide edit/add/delete buttons throughout
+  document.querySelectorAll('.btn-danger, [onclick*="showAddProjectModal"], [onclick*="addDesigner"], [onclick*="removeDesigner"], [onclick*="addConsultant"], [onclick*="editConsultant"], [onclick*="removeProject"]').forEach(el => {
+    el.style.display = 'none';
+  });
+}
 
 // ─── Authentication ───────────────────────────────────────────────────────────
 function showLoginScreen(){
@@ -1170,6 +1215,8 @@ async function doLogin(){
   try{
     const{data,error}=await sb_client.auth.signInWithPassword({email,password});
     if(error)throw error;
+    const role=data.user?.user_metadata?.role||'designer';
+    userRole=role;
     // onAuthStateChange will handle hideLoginScreen + loadAll
   }catch(e){
     errEl.textContent=e.message||'Sign in failed.';
@@ -1187,9 +1234,9 @@ async function doLogout(){
   document.getElementById('boot-status').textContent='Connecting…';
   showLoginScreen();
 }
-function setUserLabel(email){
+function setUserLabel(email, role){
   const el=document.getElementById('login-user-label');
-  if(el)el.title='Signed in as '+email;
+  if(el)el.title=(role==='admin'?'Admin: ':'Designer: ')+email;
 }
 
 function loadSettings(){try{const s=localStorage.getItem('mfb_settings');if(s){const p=JSON.parse(s);state.rate=p.rate||50;state.hpq=p.hpq||2;state.activeDesigner=p.activeDesigner||null;if(p.tgtTargets&&typeof Object.values(p.tgtTargets)[0]==='number')tgtTargets=p.tgtTargets;}}catch(e){}}
@@ -2821,8 +2868,9 @@ loadSettings();initControls();initSidebar();
 (async()=>{
   const{data:{session}}=await sb_client.auth.getSession();
   if(session){
-    setUserLabel(session.user.email);
-    loadAll();
+    const role=session.user?.user_metadata?.role||'designer';
+    setUserLabel(session.user.email, role);
+    loadAll().then(()=>applyRole(role));
   } else {
     // No session — show login, never call loadAll
     document.getElementById('boot-screen').style.display='none';
@@ -2833,9 +2881,10 @@ loadSettings();initControls();initSidebar();
 // Listen for auth state changes (handles login/logout)
 sb_client.auth.onAuthStateChange((event, session)=>{
   if(event==='SIGNED_IN' && session){
-    setUserLabel(session.user.email);
+    const role=session.user?.user_metadata?.role||'designer';
+    setUserLabel(session.user.email, role);
     hideLoginScreen();
-    loadAll();
+    loadAll().then(()=>applyRole(role));
   }
   if(event==='SIGNED_OUT'){
     bootDone=false;

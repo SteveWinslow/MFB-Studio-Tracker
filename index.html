@@ -185,7 +185,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;color:var(--text)
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:18px;box-shadow:var(--shadow)}
 .card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px}
 .card-header h2{font-size:13px;font-weight:600}
-.card-body{padding:18px}.card-scroll{overflow-x:auto}
+.card-body{padding:18px}.card-scroll{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 220px)}.card-scroll thead th{position:sticky;top:0;z-index:2;background:var(--surface2);border-bottom:1px solid var(--border)}
 table{width:100%;border-collapse:collapse}
 th{font-size:11px;font-weight:600;color:var(--text3);padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;background:var(--surface2);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
 th.num{text-align:right}
@@ -569,6 +569,7 @@ html[data-accent="indigo"]{--accent:#5145C8;--accent-bg:#ECEBFA}
     <button class="nav-item" data-label="Sales Analysis" data-tab="salesanalysis" onclick="switchTab('salesanalysis')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13L6 9l2.5 2.5L12 7M13 7h-3v3"></path></svg><span class="nav-label">Sales Analysis</span></button>
     <button class="nav-item" data-label="Pipeline" data-tab="pipeline" onclick="switchTab('pipeline')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h12l-4.5 5.5V13l-3 1V8.5L2 3z"></path></svg><span class="nav-label">Pipeline</span></button>
     <button class="nav-item" data-label="Quote Calibrator" data-tab="calibrator" onclick="switchTab('calibrator')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"></circle><path d="M8 2v3M8 11v3M2 8h3M11 8h3"></path></svg><span class="nav-label">Quote Calibrator</span></button>
+    <button class="nav-item" data-label="Clients" data-tab="clients" onclick="switchTab('clients')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="5" r="2.5"></circle><circle cx="11" cy="5" r="2.5"></circle><path d="M1 14c0-2.2 1.8-4 4-4h6c2.2 0 4 1.8 4 4"></path></svg><span class="nav-label">Clients</span></button>
     <div class="nav-section">Commercial</div>
     <button class="nav-item" data-label="P&amp;L" data-tab="pl" onclick="switchTab('pl')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12h12M2 4h12M5 8h6"></path><circle cx="4" cy="8" r="1.5"></circle><circle cx="12" cy="8" r="1.5"></circle></svg><span class="nav-label">P&amp;L</span></button>
     <button class="nav-item" data-label="Resource Load" data-tab="resource" onclick="switchTab('resource')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="5" r="2"></circle><circle cx="11" cy="5" r="2"></circle><path d="M1 13c0-2.2 1.8-4 4-4s4 1.8 4 4"></path><path d="M9 13c0-2.2 1.8-4 4-4"></path></svg><span class="nav-label">Resource Load</span></button>
@@ -818,7 +819,7 @@ html[data-accent="indigo"]{--accent:#5145C8;--accent-bg:#ECEBFA}
         <div><h1>MFB Fees</h1><p>Arch, Regs and BSA fees per project</p></div>
       </div>
       <div class="toolbar"><span class="toolbar-label">Sort</span>
-        <select class="sel-compact" id="mfb-sort" onchange="renderMFBFees()"><option value="code">Code A–Z</option><option value="arch">Arch fee ↓</option><option value="total">Total fee ↓</option><option value="pct">% CV ↓</option></select>
+        <select class="sel-compact" id="mfb-sort" onchange="renderMFBFees()"><option value="code">Code A–Z</option><option value="name">Name A–Z</option><option value="arch">Arch fee ↓</option><option value="total">Total fee ↓</option><option value="pct">% CV ↓</option></select>
       </div>
       <div class="card"><div class="card-scroll"><table><thead><tr>
         <th>Code</th><th>Project name</th><th class="num">CV</th><th class="num">Arch fee</th><th class="num">%</th><th class="num">Regs fee</th><th class="num">%</th><th class="num">BSA fee</th><th class="num">%</th><th class="num">Total MFB fee</th><th class="num">% CV</th><th class="num">Rate override</th><th></th>
@@ -860,6 +861,37 @@ html[data-accent="indigo"]{--accent:#5145C8;--accent-bg:#ECEBFA}
       <div class="page-header"><div><h1>Project Map</h1><p>Geographic view of projects with addresses</p></div></div>
       <p id="locations-empty" style="font-size:13px;color:var(--text3);display:none;padding:40px 0;text-align:center">No project addresses yet.</p>
       <div id="locations-map-wrap" style="display:none"></div>
+    </div>
+
+    <!-- CLIENTS -->
+    <div id="tab-clients" class="tab-content">
+      <div class="page-header">
+        <div><h1>Clients</h1><p>Project history, location and construction value by client</p></div>
+      </div>
+      <div class="toolbar">
+        <input type="text" class="sel-compact" id="client-search" placeholder="Search client…" oninput="renderClients()" style="min-width:160px">
+        <span class="toolbar-label" style="margin-left:8px">Projects</span>
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="client-type-c" onclick="setClientType('c')">C only</button>
+          <button class="toggle-btn" id="client-type-cp" onclick="setClientType('cp')">C &amp; P</button>
+        </div>
+        <span class="toolbar-label" style="margin-left:8px">Show</span>
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="client-filter-active" onclick="setClientFilter('active')">Active</button>
+          <button class="toggle-btn" id="client-filter-all" onclick="setClientFilter('all')">All</button>
+        </div>
+        <span class="toolbar-label" style="margin-left:8px">Sort</span>
+        <select class="sel-compact" id="client-sort" onchange="renderClients()">
+          <option value="alpha">A–Z</option>
+          <option value="count">Most projects</option>
+          <option value="cv">Highest CV</option>
+        </select>
+      </div>
+      <div class="kpis" id="client-kpis" style="margin-bottom:16px"></div>
+      <div class="card"><div class="card-scroll"><table id="client-table">
+        <thead><tr><th>Project name</th><th>Location</th><th class="num">CV</th><th class="num">GIFA</th><th>Status</th></tr></thead>
+        <tbody id="client-list"></tbody>
+      </table></div></div>
     </div>
 
     <!-- P&L -->
@@ -959,41 +991,68 @@ html[data-accent="indigo"]{--accent:#5145C8;--accent-bg:#ECEBFA}
     <!-- PRE-CONSTRUCTION -->
     <div id="tab-preconstruction" class="tab-content">
       <div class="page-header">
-        <div><h1>Pre-Construction</h1><p>Hours spent on P-projects by the pre-construction team — reference only, not included in design burn</p></div>
+        <div><h1>Pre-Construction</h1><p>Hours logged on P-projects by the pre-construction team</p></div>
       </div>
-      <!-- Team member pills -->
-      <div style="margin-bottom:16px">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:8px">Select team member</div>
-        <div id="pc-team-pills" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+
+      <!-- KPI strip -->
+      <div class="kpis" id="pc-summary-cards" style="margin-bottom:16px"></div>
+
+      <!-- Toolbar -->
+      <div class="toolbar" style="margin-bottom:14px">
+        <input type="text" class="sel-compact" id="pc-search" placeholder="Search project or person…" oninput="renderPCTable()" style="min-width:180px">
+        <span class="toolbar-label" style="margin-left:8px">Project</span>
+        <select class="sel-compact" id="pc-filter-project" onchange="renderPCTable()"><option value="">All projects</option></select>
+        <span class="toolbar-label" style="margin-left:8px">Person</span>
+        <select class="sel-compact" id="pc-filter-person" onchange="renderPCTable()"><option value="">All people</option></select>
+        <span class="toolbar-label" style="margin-left:8px">Sort</span>
+        <select class="sel-compact" id="pc-sort" onchange="renderPCTable()">
+          <option value="project">Project</option>
+          <option value="person">Person</option>
+          <option value="hours">Hours ↓</option>
+          <option value="date">Date ↓</option>
+        </select>
+        <span class="toolbar-label" style="margin-left:8px">Rate £/hr</span>
+        <input type="number" id="pc-rate-input" value="40" min="1" step="1" class="sel-compact" style="width:64px;text-align:right" onchange="PC_RATE=parseFloat(this.value)||40;renderPreConstruction()">
+        <button class="btn btn-primary" style="margin-left:4px" onclick="openPCForm()">+ Log hours</button>
       </div>
-      <!-- Entry form (shown when person selected) -->
-      <div id="pc-form" style="display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:16px;margin-bottom:20px">
-        <div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:12px">Log hours</div>
-        <div class="field" style="margin-bottom:12px"><label>Project</label><select id="pc-project" style="max-width:340px" onchange="updatePCPersonRows()"><option value="">Select project…</option></select></div>
-        <div id="pc-person-rows" style="margin-bottom:12px"></div>
-        <div style="display:flex;gap:8px;margin-top:4px">
-          <button class="btn btn-primary" onclick="savePreConstruction()">Save all</button>
-          <button class="btn" onclick="cancelPC()">Cancel</button>
-        </div>
-      </div>
-      <!-- Summary cards -->
-      <div id="pc-summary-cards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px"></div>
+
       <!-- Table -->
       <div class="card">
         <div class="card-scroll">
           <table>
             <thead><tr>
-              <th>Project code</th>
+              <th>Code</th>
               <th>Project</th>
               <th>Person</th>
               <th>Date</th>
               <th class="num">Hours</th>
-              <th class="num">Internal cost @ £40/hr</th>
-              <th class="num">% of CV</th>
+              <th class="num">Cost</th>
+              <th class="num">% CV</th>
               <th></th>
             </tr></thead>
             <tbody id="pc-body"></tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Log hours modal -->
+      <div class="modal-overlay" id="pc-form" style="display:none" onclick="if(event.target===this)cancelPC()">
+        <div class="modal" style="width:min(94vw,420px)">
+          <h3>Log hours</h3>
+          <div class="field" style="margin-bottom:14px">
+            <label>Project</label>
+            <select id="pc-project" onchange="updatePCPersonRows()"><option value="">Select project…</option></select>
+          </div>
+          <div class="field" style="margin-bottom:14px">
+            <label>Date</label>
+            <input type="date" id="pc-date" style="font-size:13px;padding:6px 9px;border-radius:7px;border:1px solid var(--border2);background:var(--surface);color:var(--text);width:100%;font-family:inherit">
+          </div>
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:10px">Team member hours</div>
+          <div id="pc-person-rows" style="margin-bottom:4px"></div>
+          <div class="modal-footer">
+            <button class="btn" onclick="cancelPC()">Cancel</button>
+            <button class="btn btn-primary" onclick="savePreConstruction()">Save</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1127,7 +1186,7 @@ const DAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const QUARTERS=["Q1","Q2","Q3","Q4"];
 const CON_TYPES=['MEP','Structural Engineer','Building Control Advisor','Fire Engineer','Acoustic Consultant','Other'];
 const CON_COLOURS={'MEP':'#2563EB','Structural Engineer':'#7c3aed','Building Control Advisor':'#c2410c','Fire Engineer':'#b91c1c','Acoustic Consultant':'#15803d','Other':'#6b7280'};
-const TAB_TITLES={overview:'Studio Overview',sheet:'Design Allocation',summary:'Monthly Summary',burn:'Fee Burn',pl:'P&L',resource:'Resource Load',salesanalysis:'Sales Analysis',salescharts:'Charts',feereality:'Fee Reality',projects:'Project Info',mfbfees:'MFB Fees',consultants:'Consultant Fees',preconstruction:'PreCon Allocation',notbudgeted:'Not Budgeted For',locations:'Project Map',settings:'Settings',targets:'Target Bands',calibrator:'Quote Calibrator',pipeline:'Pipeline'};
+const TAB_TITLES={overview:'Studio Overview',sheet:'Design Allocation',summary:'Monthly Summary',burn:'Fee Burn',pl:'P&L',resource:'Resource Load',salesanalysis:'Sales Analysis',salescharts:'Charts',feereality:'Fee Reality',projects:'Project Info',mfbfees:'MFB Fees',consultants:'Consultant Fees',preconstruction:'PreCon Allocation',notbudgeted:'Not Budgeted For',locations:'Project Map',clients:'Clients',settings:'Settings',targets:'Target Bands',calibrator:'Quote Calibrator',pipeline:'Pipeline'};
 
 let state={year:new Date().getFullYear(),month:new Date().getMonth(),activeDesigner:null,allDesignerObjects:[],allDesigners:[],designers:[],projects:[],entries:{},consultants:[],rate:40,hpq:2};
 let summaryType='C';
@@ -1473,7 +1532,7 @@ function switchTab(tab){
   if(tab==='burn')renderBurn();if(tab==='summary')renderSummary();if(tab==='settings')renderSettings();
   if(tab==='projects')renderProjectList();if(tab==='mfbfees')renderMFBFees();if(tab==='consultants')renderConsultants();if(tab==='preconstruction')renderPreConstruction();if(tab==='notbudgeted')renderNotBudgeted();
   if(tab==='salesanalysis')renderSalesAnalysis();if(tab==='salescharts')renderSalesCharts();
-  if(tab==='feereality')renderFeeReality();if(tab==='pl')renderPL();if(tab==='resource')renderResource();if(tab==='locations')renderLocations();
+  if(tab==='feereality')renderFeeReality();if(tab==='pl')renderPL();if(tab==='resource')renderResource();if(tab==='locations')renderLocations();if(tab==='clients')renderClients();
   if(tab==='targets')renderTargets();
   if(tab==='calibrator')renderCalibrator();
   if(tab==='pipeline')renderPipeline();
@@ -1561,9 +1620,10 @@ function renderSummary(){
   const projects=[...allProjectNames].filter(p=>{const code=codeOf(p);return code?regex.test(code):regex.test(p);}).sort((a,b)=>sortBy==='code'?(codeOf(a)||'').localeCompare(codeOf(b)||''):a.localeCompare(b));
   if(!projects.length){document.getElementById('summary-content').innerHTML=`<div class="empty-state">No ${summaryType}-project entries for this month yet.</div>`;return;}
   const grandTotal={};projects.forEach(p=>{grandTotal[p]=_sumDesigners.reduce((acc,d)=>acc+(data[d][p]||0),0);});const dTotals={};_sumDesigners.forEach(d=>{dTotals[d]=projects.reduce((acc,p)=>acc+(data[d][p]||0),0);});const overall=Object.values(grandTotal).reduce((a,b)=>a+b,0);
-  let html=`<table style="width:100%;border-collapse:collapse"><thead><tr><th>Code</th><th>Project</th>${_sumDesigners.map(d=>`<th class="num">${esc(d)}</th>`).join('')}<th class="num">Total Qs</th><th class="num">Hours</th></tr></thead><tbody>`;
-  projects.forEach(p=>{html+=`<tr><td><span class="code-chip">${esc(codeOf(p))}</span></td><td style="font-weight:500">${esc(p)}</td>${_sumDesigners.map(d=>`<td class="num">${data[d][p]||'–'}</td>`).join('')}<td class="num" style="font-weight:700">${grandTotal[p]}</td><td class="num" style="font-weight:700">${(grandTotal[p]*state.hpq).toFixed(1)}</td></tr>`;});
-  html+=`<tr class="total-row"><td colspan="2">Total</td>${_sumDesigners.map(d=>`<td class="num">${dTotals[d]||'–'}</td>`).join('')}<td class="num">${overall}</td><td class="num">${(overall*state.hpq).toFixed(1)}</td></tr></tbody></table>`;
+  let html=`<table style="width:100%;border-collapse:collapse"><thead><tr><th>Code</th><th>Project</th>${_sumDesigners.map(d=>`<th class="num">${esc(d)}</th>`).join('')}<th class="num">Total Qs</th><th class="num">Hours</th><th class="num">Cost</th></tr></thead><tbody>`;
+  projects.forEach(p=>{const cost=grandTotal[p]*state.hpq*state.rate;html+=`<tr><td><span class="code-chip">${esc(codeOf(p))}</span></td><td style="font-weight:500">${esc(p)}</td>${_sumDesigners.map(d=>`<td class="num">${data[d][p]||'–'}</td>`).join('')}<td class="num" style="font-weight:700">${grandTotal[p]}</td><td class="num" style="font-weight:700">${(grandTotal[p]*state.hpq).toFixed(1)}</td><td class="num" style="font-weight:600;color:var(--text2)">${fmtGBP(cost)}</td></tr>`;});
+  const totalCost=overall*state.hpq*state.rate;
+  html+=`<tr class="total-row"><td colspan="2">Total</td>${_sumDesigners.map(d=>`<td class="num">${dTotals[d]||'–'}</td>`).join('')}<td class="num">${overall}</td><td class="num">${(overall*state.hpq).toFixed(1)}</td><td class="num" style="font-weight:700">${fmtGBP(totalCost)}</td></tr></tbody></table>`;
   document.getElementById('summary-content').innerHTML=html;
 }
 
@@ -1644,9 +1704,9 @@ function renderFeeReality(){
     const{cost:mfbLiveCost}=calcProjectCost(p);
     const num=p.code.trim().slice(1);
     const salesCost=salesCostByNum[num]||0;
-    // PreCon cost: non-designer hours on matching P-project × £40/hr
+    // PreCon cost: non-designer hours on matching P-project × PC_RATE
     const preconEntries=frMode==='precon'||frMode==='inc'?state.preconstruction.filter(r=>r.projectCode==='P'+num):[];
-    const preconCost=preconEntries.reduce((s,r)=>s+(r.hours*40),0);
+    const preconCost=preconEntries.reduce((s,r)=>s+(r.hours*PC_RATE),0);
     // Consultant totals for this project
     const pCons=state.consultants.filter(con=>con.project===p.name);
     // Each cost component calculated independently
@@ -1700,7 +1760,7 @@ function renderFeeReality(){
     live:`<strong>Live cost only:</strong> Design hours logged × £${state.rate}/hr vs your quoted MFB fee. Shows pure design burn on each contracted project.`,
     con:`<strong>+ Consultant variance:</strong> Adds consultant actual costs (or quoted if no actual set) as a separate column. Total cost = design burn + consultant spend. Implied % shows what % of CV you need to recover all internal and consultant costs.`,
     inc:`<strong>+ Sales Design Cost:</strong> Adds designer hours spent on the matching P-project before it was won. Total cost = design burn + consultant + P-project design time. Now you can see the full cost of delivering including the effort to win it.`,
-    precon:`<strong>+ PreCon:</strong> Adds PreCon team hours (£40/hr) from the P-project stage. Total cost = design burn + consultant + P-project design + PreCon time. This is your complete internal investment in winning and delivering the project.`,
+    precon:`<strong>+ PreCon:</strong> Adds PreCon team hours (£${PC_RATE}/hr) from the P-project stage. Total cost = design burn + consultant + P-project design + PreCon time. This is your complete internal investment in winning and delivering the project.`,
   };
   if(explainer){explainer.innerHTML=explainerTexts[frMode]||explainerTexts.live;
   }
@@ -1922,6 +1982,100 @@ function fmtLastAlloc(dt){
   if(diffMonths < 12) return { label: diffMonths + 'mo ago', age: 'old' };
   const yrs = Math.floor(diffMonths / 12);
   return { label: yrs + 'yr ' + (diffMonths % 12) + 'mo ago', age: 'stale' };
+}
+
+/* ===================== CLIENTS ===================== */
+let clientFilter='active';
+let clientType='c';
+function setClientFilter(f){
+  clientFilter=f;
+  document.getElementById('client-filter-active').classList.toggle('active',f==='active');
+  document.getElementById('client-filter-all').classList.toggle('active',f==='all');
+  renderClients();
+}
+function setClientType(t){
+  clientType=t;
+  document.getElementById('client-type-c').classList.toggle('active',t==='c');
+  document.getElementById('client-type-cp').classList.toggle('active',t==='cp');
+  renderClients();
+}
+function renderClients(){
+  const search=(document.getElementById('client-search')||{value:''}).value.trim().toLowerCase();
+  const sortBy=(document.getElementById('client-sort')||{value:'alpha'}).value;
+  const fmtCV=v=>{if(!v)return'—';return v>=1e6?'£'+(v/1e6).toFixed(2).replace(/\.?0+$/,'')+'m':v>=1000?'£'+(v/1000).toFixed(0)+'k':'£'+Math.round(v);};
+  const statusMap={active:'Active',complete:'Complete',sale_lost:'Sale Lost',converted:'Converted',hidden:'Hidden',archived:'Archived'};
+  const statusColour={active:'var(--green)',complete:'var(--text3)',sale_lost:'var(--red)',converted:'#2563eb',hidden:'var(--text3)',archived:'var(--text3)'};
+
+  let allProjs=state.projects.filter(p=>p.client&&p.code&&(clientType==='cp'?/^[CP]\d/.test(p.code):/^C\d/.test(p.code)));
+
+  // Build full client map (all statuses) to determine who has multiple projects
+  const fullMap={};
+  allProjs.forEach(p=>{
+    const c=p.client.trim();
+    if(!fullMap[c]) fullMap[c]=0;
+    fullMap[c]++;
+  });
+
+  // Now filter projects for display
+  let projs=allProjs;
+  if(clientFilter==='active') projs=projs.filter(p=>!p.status||p.status==='active');
+
+  const map={};
+  projs.forEach(p=>{
+    const c=p.client.trim();
+    if(!fullMap[c]||fullMap[c]<2) return; // only clients with 2+ total projects
+    if(!map[c]) map[c]={name:c,projects:[]};
+    map[c].projects.push(p);
+  });
+
+  let clients=Object.values(map).filter(c=>c.projects.length>0&&(!search||c.name.toLowerCase().includes(search)));
+
+  if(sortBy==='count') clients.sort((a,b)=>b.projects.length-a.projects.length);
+  else if(sortBy==='cv') clients.sort((a,b)=>b.projects.reduce((s,p)=>s+(parseFloat(p.cv)||0),0)-a.projects.reduce((s,p)=>s+(parseFloat(p.cv)||0),0));
+  else clients.sort((a,b)=>a.name.localeCompare(b.name));
+
+  const totalCV=projs.filter(p=>fullMap[p.client.trim()]>=2).reduce((s,p)=>s+(parseFloat(p.cv)||0),0);
+  const kpis=document.getElementById('client-kpis');
+  if(kpis) kpis.innerHTML=`
+    <div class="kpi"><div class="kpi-label">Clients</div><div class="kpi-value">${clients.length}</div></div>
+    <div class="kpi"><div class="kpi-label">Projects shown</div><div class="kpi-value">${projs.length}</div></div>
+    <div class="kpi"><div class="kpi-label">Total CV</div><div class="kpi-value">${fmtCV(totalCV)}</div></div>
+  `;
+
+  const tbody=document.getElementById('client-list');
+  if(!tbody) return;
+  if(!clients.length){tbody.innerHTML=`<tr><td colspan="5"><div class="empty-state">No clients found.</div></td></tr>`;return;}
+
+  let html='';
+  clients.forEach(c=>{
+    const clientCV=c.projects.reduce((s,p)=>s+(parseFloat(p.cv)||0),0);
+    const sorted=c.projects.sort((a,b)=>(a.code||'').localeCompare(b.code||''));
+
+    html+=`<tr style="background:var(--surface2)">
+      <td colspan="5" style="font-size:12px;font-weight:600;color:var(--text1);padding:6px 10px">
+        ${c.name}
+        <span style="font-weight:400;color:var(--text3);margin-left:8px">${c.projects.length} project${c.projects.length!==1?'s':''}</span>
+        ${clientCV?`<span style="font-weight:600;color:var(--green);margin-left:10px">${fmtCV(clientCV)}</span>`:''}
+      </td>
+    </tr>`;
+
+    sorted.forEach(p=>{
+      const cv=parseFloat(p.cv)||0;
+      const gifa=parseFloat(p.gifa)||0;
+      const addrParts=(p.address||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const loc=addrParts.length>=2?addrParts.slice(-2).join(', '):addrParts[0]||'—';
+      const st=p.status||'active';
+      const pTag=clientType==='cp'&&p.code&&/^P\d/.test(p.code)?`<span style="font-size:10px;font-weight:600;color:#b45309;background:#fef3c7;padding:1px 5px;border-radius:3px;margin-right:6px">P</span>`:'';
+      html+=`<tr>
+        <td style="font-size:13px;padding-left:18px">${pTag}${p.name}</td>
+        <td style="font-size:12px;color:var(--text3)">${loc}</td>
+        <td class="num" style="font-size:12px">${fmtCV(cv)}</td>
+        <td class="num" style="font-size:12px;color:var(--text3)">${gifa?Math.round(gifa).toLocaleString()+' m²':'—'}</td>
+        <td style="font-size:11px;color:${statusColour[st]||'var(--text3)'}">${statusMap[st]||st}</td>
+      </tr>`;
+    });
+  });
+  tbody.innerHTML=html;
 }
 
 function renderProjectList(){
@@ -2194,121 +2348,159 @@ function renderSettingsTargets(){
   el.innerHTML=html;
 }
 function renderPreConstruction(){
-  const PC_RATE=40;
-  // Build team pills from designers list
-  const pills=document.getElementById('pc-team-pills');
-  if(pills){
-    pills.innerHTML=PC_TEAM.map(d=>`<button onclick="togglePCPerson('${esc(d)}')" id="pc-pill-${esc(d).replace(/\s/g,'_')}" style="padding:5px 14px;border-radius:20px;border:1px solid var(--border2);background:var(--surface);color:var(--text1);cursor:pointer;font-size:12px;font-weight:400;transition:all .15s">${esc(d)}</button>`).join('');
-  }
-  // Populate project dropdown with P-projects
-  const projSel=document.getElementById('pc-project');
-  if(projSel){
-    const pProjs=state.projects.filter(p=>p.code&&/^P\d/.test(p.code));
-    projSel.innerHTML='<option value="">Select project…</option>'+pProjs.map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)}</option>`).join('');
-  }
-  // Summary cards
+  // KPI strip
   const totalHrs=state.preconstruction.reduce((s,r)=>s+r.hours,0);
   const totalCost=totalHrs*PC_RATE;
   const people=new Set(state.preconstruction.map(r=>r.name)).size;
+  const projs=new Set(state.preconstruction.map(r=>r.projectCode)).size;
   const cards=document.getElementById('pc-summary-cards');
-  if(cards)cards.innerHTML=[
-    {label:'Total hours logged',val:totalHrs.toFixed(1)+'h',sub:`across ${people} team member${people!==1?'s':''}`,col:'var(--accent)'},
-    {label:'Total internal cost',val:fmtGBP(Math.round(totalCost)),sub:'@ £40/hr — reference only',col:'var(--text2)'},
-    {label:'Projects tracked',val:new Set(state.preconstruction.map(r=>r.projectCode)).size,sub:'P-projects with logged time',col:'var(--text2)'},
-  ].map(({label,val,sub,col})=>`<div class="card" style="padding:14px 16px"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">${label}</div><div style="font-size:22px;font-weight:700;color:${col}">${val}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${sub}</div></div>`).join('');
-  // Table — group by project then person
-  const tbody=document.getElementById('pc-body');if(!tbody)return;tbody.innerHTML='';
-  if(!state.preconstruction.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state">No hours logged yet — select a team member above to get started.</div></td></tr>`;return;}
-  // Sort by project then name
-  const rows=[...state.preconstruction].sort((a,b)=>a.projectCode.localeCompare(b.projectCode)||a.name.localeCompare(b.name));
-  let lastCode='';let projSubTotal=0;let projSubRows=[];
-  const flushProject=()=>{
-    if(!projSubRows.length)return;
-    projSubRows.forEach(r=>{tbody.appendChild(r);});
-    const tr=document.createElement('tr');tr.style.cssText='background:var(--surface2);font-size:11px;color:var(--text3)';
-    tr.innerHTML=`<td></td><td></td><td style="font-size:11px;color:var(--text3)"></td><td style="text-align:right;padding-right:8px">subtotal</td><td class="num" style="font-weight:600;color:var(--text1)">${projSubTotal.toFixed(1)}h</td><td class="num" style="font-weight:600;color:var(--text1)">${fmtGBP(Math.round(projSubTotal*PC_RATE))}</td><td colspan="2"></td>`;
-    tbody.appendChild(tr);projSubRows=[];projSubTotal=0;
+  if(cards) cards.innerHTML=[
+    {label:'Total hours',val:totalHrs.toFixed(1)+'h',sub:`${people} team member${people!==1?'s':''}`},
+    {label:'Total cost',val:fmtGBP(Math.round(totalCost)),sub:`@ £${PC_RATE}/hr`},
+    {label:'Projects tracked',val:projs,sub:'P-projects with logged time'},
+  ].map(({label,val,sub})=>`<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-value">${val}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${sub}</div></div>`).join('');
+
+  // Populate project dropdown in form
+  const projSel=document.getElementById('pc-project');
+  if(projSel){
+    const pProjs=state.projects.filter(p=>p.code&&/^P\d/.test(p.code)).sort((a,b)=>a.code.localeCompare(b.code));
+    projSel.innerHTML='<option value="">Select project…</option>'+pProjs.map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)}</option>`).join('');
+  }
+
+  // Populate filter dropdowns
+  const filterProj=document.getElementById('pc-filter-project');
+  const filterPerson=document.getElementById('pc-filter-person');
+  if(filterProj){
+    const codes=[...new Set(state.preconstruction.map(r=>r.projectCode))].sort();
+    filterProj.innerHTML='<option value="">All projects</option>'+codes.map(c=>{
+      const p=state.projects.find(x=>x.code===c);
+      return`<option value="${esc(c)}">${esc(c)}${p?' — '+esc(p.name):''}` ;
+    }).join('');
+  }
+  if(filterPerson){
+    const names=[...new Set(state.preconstruction.map(r=>r.name))].sort();
+    filterPerson.innerHTML='<option value="">All people</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  }
+
+  // Set today as default date
+  const dateInput=document.getElementById('pc-date');
+  if(dateInput&&!dateInput.value) dateInput.value=new Date().toISOString().slice(0,10);
+
+  // Build person rows in form (all PC_TEAM members)
+  updatePCPersonRows();
+
+  renderPCTable();
+}
+
+function renderPCTable(){
+  const search=(document.getElementById('pc-search')||{value:''}).value.trim().toLowerCase();
+  const filterProj=(document.getElementById('pc-filter-project')||{value:''}).value;
+  const filterPerson=(document.getElementById('pc-filter-person')||{value:''}).value;
+  const sortBy=(document.getElementById('pc-sort')||{value:'project'}).value;
+
+  let rows=[...state.preconstruction];
+  if(filterProj) rows=rows.filter(r=>r.projectCode===filterProj);
+  if(filterPerson) rows=rows.filter(r=>r.name===filterPerson);
+  if(search) rows=rows.filter(r=>r.projectCode.toLowerCase().includes(search)||r.name.toLowerCase().includes(search)||(state.projects.find(p=>p.code===r.projectCode)||{name:''}).name.toLowerCase().includes(search));
+
+  if(sortBy==='person') rows.sort((a,b)=>a.name.localeCompare(b.name)||a.projectCode.localeCompare(b.projectCode));
+  else if(sortBy==='hours') rows.sort((a,b)=>b.hours-a.hours);
+  else if(sortBy==='date') rows.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  else rows.sort((a,b)=>a.projectCode.localeCompare(b.projectCode)||a.name.localeCompare(b.name));
+
+  const tbody=document.getElementById('pc-body');if(!tbody)return;
+  if(!rows.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state">${state.preconstruction.length?'No entries match the current filters.':'No hours logged yet — click "+ Log hours" to get started.'}</div></td></tr>`;return;}
+
+  let html='';let lastGroup='';let groupHrs=0;let groupRows=[];
+  const groupKey=r=>sortBy==='person'?r.name:r.projectCode;
+
+  const flushGroup=()=>{
+    if(!groupRows.length)return;
+    html+=groupRows.join('');
+    html+=`<tr style="background:var(--surface2)"><td colspan="4" style="font-size:11px;color:var(--text3);padding:4px 10px">subtotal</td><td class="num" style="font-size:12px;font-weight:600;color:var(--text1)">${groupHrs.toFixed(1)}h</td><td class="num" style="font-size:12px;font-weight:600;color:var(--text1)">${fmtGBP(Math.round(groupHrs*PC_RATE))}</td><td colspan="2"></td></tr>`;
+    groupRows=[];groupHrs=0;
   };
-  rows.forEach((r,i)=>{
-    if(r.projectCode!==lastCode){flushProject();lastCode=r.projectCode;}
+
+  rows.forEach(r=>{
+    const key=groupKey(r);
+    if(key!==lastGroup){flushGroup();lastGroup=key;}
     const proj=state.projects.find(p=>p.code===r.projectCode);
     const cv=proj&&proj.cv?parseFloat(proj.cv):null;
     const cost=r.hours*PC_RATE;
-    const pctCV=cv&&cost?((cost/cv)*100).toFixed(3)+'%':'–';
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td><span class="code-chip">${esc(r.projectCode)}</span></td>
-      <td style="font-weight:500">${esc(proj?proj.name:r.projectCode)}</td>
+    const pctCV=cv&&cost?((cost/cv)*100).toFixed(2)+'%':'–';
+    groupRows.push(`<tr>
+      <td><span class="code-chip">${esc(r.projectCode)}</span></td>
+      <td style="font-size:13px">${esc(proj?proj.name:r.projectCode)}</td>
       <td style="font-size:12px;color:var(--text2)">${esc(r.name)}</td>
       <td style="font-size:12px;color:var(--text3)">${r.date?new Date(r.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}):'–'}</td>
       <td class="num">${r.hours.toFixed(1)}</td>
       <td class="num">${fmtGBP(Math.round(cost))}</td>
       <td class="num" style="font-size:12px;color:var(--text3)">${pctCV}</td>
-      <td><button class="btn btn-sm" onclick="editPC('${esc(r.name)}','${esc(r.projectCode)}')">Edit</button></td>`;
-    projSubRows.push(tr);projSubTotal+=r.hours;
+      <td><button class="btn btn-sm" onclick="editPC('${esc(r.name)}','${esc(r.projectCode)}')">Edit</button></td>
+    </tr>`);
+    groupHrs+=r.hours;
   });
-  flushProject();
+  flushGroup();
+
   // Grand total
-  const tr2=document.createElement('tr');tr2.className='total-row';
-  tr2.innerHTML=`<td colspan="4">Total</td><td class="num" style="font-weight:700">${totalHrs.toFixed(1)}h</td><td class="num" style="font-weight:700">${fmtGBP(Math.round(totalCost))}</td><td colspan="2"></td>`;
-  tbody.appendChild(tr2);
+  const totalHrs=rows.reduce((s,r)=>s+r.hours,0);
+  html+=`<tr class="total-row"><td colspan="4">Total</td><td class="num" style="font-weight:700">${totalHrs.toFixed(1)}h</td><td class="num" style="font-weight:700">${fmtGBP(Math.round(totalHrs*PC_RATE))}</td><td colspan="2"></td></tr>`;
+  tbody.innerHTML=html;
 }
+
+function openPCForm(){
+  document.getElementById('pc-form').style.display='flex';
+  updatePCPersonRows();
+}
+
 const PC_TEAM=['Steve F','Steve W','Vaughan','Jonty','Patrick','Stuart'];
-let _pcSelected=new Set();
-function togglePCPerson(name){
-  if(_pcSelected.has(name))_pcSelected.delete(name);else _pcSelected.add(name);
-  PC_TEAM.forEach(d=>{
-    const pill=document.getElementById('pc-pill-'+d.replace(/\s/g,'_'));if(!pill)return;
-    const on=_pcSelected.has(d);
-    Object.assign(pill.style,{background:on?'var(--accent)':'var(--surface)',color:on?'#fff':'var(--text1)',fontWeight:on?'600':'400',borderColor:on?'var(--accent)':'var(--border2)'});
-  });
-  if(_pcSelected.size>0){
-    document.getElementById('pc-form').style.display='block';
-    updatePCPersonRows();
-    document.getElementById('pc-form').scrollIntoView({behavior:'smooth',block:'nearest'});
-  }else{document.getElementById('pc-form').style.display='none';}
-}
+let PC_RATE=40;
 function updatePCPersonRows(){
   const wrap=document.getElementById('pc-person-rows');if(!wrap)return;
   const projectCode=document.getElementById('pc-project').value;
-  wrap.innerHTML=[..._pcSelected].map(name=>{
+  wrap.innerHTML=PC_TEAM.map(name=>{
     const existing=projectCode?state.preconstruction.find(r=>r.name===name&&r.projectCode===projectCode):null;
-    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <span style="width:90px;font-size:13px;font-weight:500;flex-shrink:0">${esc(name)}</span>
-      <input type="number" id="pc-hrs-${esc(name).replace(/\s/g,'_')}" value="${existing?existing.hours:''}" placeholder="hrs" min="0" step="0.5" style="width:90px;padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit">
-      ${existing?`<span style="font-size:11px;color:var(--text3)">currently ${existing.hours}h</span>`:''}
+    return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="width:100px;font-size:13px;color:var(--text1);flex-shrink:0">${esc(name)}</span>
+      <input type="number" id="pc-hrs-${esc(name).replace(/\s/g,'_')}" value="${existing?existing.hours:''}" placeholder="hrs" min="0" step="0.5" style="width:80px;padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+      ${existing?`<span style="font-size:11px;color:var(--text3)">was ${existing.hours}h</span>`:''}
     </div>`;
   }).join('');
 }
 function editPC(name,projectCode){
-  selectPCPerson(name);
-  document.getElementById('pc-project').value=projectCode;
-  const existing=state.preconstruction.find(r=>r.name===name&&r.projectCode===projectCode);
-  if(existing){document.getElementById('pc-hours').value=existing.hours;document.getElementById('pc-date').value=existing.date||new Date().toISOString().slice(0,10);}
+  openPCForm();
+  const projSel=document.getElementById('pc-project');
+  if(projSel) projSel.value=projectCode;
+  updatePCPersonRows();
+  const inp=document.getElementById('pc-hrs-'+name.replace(/\s/g,'_'));
+  if(inp) inp.focus();
 }
 function cancelPC(){
-  _pcSelected=new Set();
-  PC_TEAM.forEach(d=>{const pill=document.getElementById('pc-pill-'+d.replace(/\s/g,'_'));if(pill){Object.assign(pill.style,{background:'var(--surface)',color:'var(--text1)',fontWeight:'400',borderColor:'var(--border2)'})}});
   document.getElementById('pc-form').style.display='none';
+  const projSel=document.getElementById('pc-project');if(projSel)projSel.value='';
+  updatePCPersonRows();
 }
 
 async function savePreConstruction(){
   const projectCode=document.getElementById('pc-project').value;
-  if(!_pcSelected.size){alert('Please select at least one team member.');return;}
+  const date=document.getElementById('pc-date').value||new Date().toISOString().slice(0,10);
   if(!projectCode){alert('Please select a project.');return;}
   const entries=[];
-  for(const name of _pcSelected){
+  for(const name of PC_TEAM){
     const inp=document.getElementById('pc-hrs-'+name.replace(/\s/g,'_'));
-    const hours=parseFloat(inp?inp.value:'');
+    if(!inp||inp.value==='')continue;
+    const hours=parseFloat(inp.value);
     if(isNaN(hours)||hours<0){alert('Please enter valid hours for '+name+'.');return;}
-    entries.push({name,hours});
+    entries.push({name,hours,date});
   }
+  if(!entries.length){alert('Enter hours for at least one team member.');return;}
   setSyncStatus('loading','Saving…');
   let saved=0;
-  for(const{name,hours}of entries){
+  for(const{name,hours,date}of entries){
     const title=name+'|'+projectCode;
     const existing=state.preconstruction.find(r=>r.name===name&&r.projectCode===projectCode);
-    if(existing){existing.hours=hours;}else{state.preconstruction.push({title,projectCode,name,hours});}
-    try{await apiCall({action:'savePreConstruction',data:JSON.stringify({Title:title,ProjectCode:projectCode,Name:name,Hours:hours})});saved++;}
+    if(existing){existing.hours=hours;existing.date=date;}else{state.preconstruction.push({title,projectCode,name,hours,date});}
+    try{await apiCall({action:'savePreConstruction',data:JSON.stringify({Title:title,ProjectCode:projectCode,Name:name,Hours:hours,Date:date})});saved++;}
     catch(e){setSyncStatus('err','Save error ('+name+'): '+e.message);}
   }
   setSyncStatus('ok','Saved '+saved+' entr'+(saved===1?'y':'ies'));
@@ -2580,6 +2772,7 @@ function renderMFBFees(){
   const tbody=document.getElementById('mfbfees-body');if(!tbody)return;tbody.innerHTML='';
   const sortBy=(document.getElementById('mfb-sort')||{value:'code'}).value;
   const projs=[...state.projects.map((p,i)=>({p,i}))].filter(({p})=>p.code&&/^C\d/.test(p.code)).sort((a,b)=>{
+    if(sortBy==='name') return(a.p.name||'').localeCompare(b.p.name||'');
     if(sortBy==='arch'){const aa=parseFloat(a.p.arch)||0,ab=parseFloat(b.p.arch)||0;return ab-aa;}
     if(sortBy==='total'){const ta=(parseFloat(a.p.arch)||0)+(parseFloat(a.p.regs)||0)+(parseFloat(a.p.bsa)||0);const tb=(parseFloat(b.p.arch)||0)+(parseFloat(b.p.regs)||0)+(parseFloat(b.p.bsa)||0);return tb-ta;}
     if(sortBy==='pct'){const cv=p=>parseFloat(p.cv)||0;const t=p=>(parseFloat(p.arch)||0)+(parseFloat(p.regs)||0)+(parseFloat(p.bsa)||0);const pa=cv(a.p)>0?t(a.p)/cv(a.p):0,pb=cv(b.p)>0?t(b.p)/cv(b.p):0;return pb-pa;}
